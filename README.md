@@ -1,7 +1,6 @@
 # Mac Clipboard
 
-> 🤖✨ **100% vibecoded.** I described what I wanted, [Claude Code](https://claude.com/claude-code) wrote the code,
-> I clicked around and said "nice". No shame. It works on my Mac.
+*Vibecoded with [Claude Code](https://claude.com/claude-code).* 🤖
 
 A tiny, fully local clipboard history for macOS. It lives in the menu bar, remembers
 everything you copy (⌘C) and shows it on **⌃⌘V** (Control + Command + V).
@@ -59,21 +58,12 @@ permission after each rebuild. To avoid that, create a self-signed code signing 
 **„MacClipboard Local Signing“** in your login keychain (Keychain Access → Certificate Assistant →
 Create a Certificate…, type *Code Signing*) – `build.sh` uses it automatically when present.
 
-## How it was made
-
-The whole app – Swift code, build script, signing setup, this README – was built in one chat session
-by me and Claude Code. I brought the idea and the opinions ("I want 5 items, scroll for more",
-"make it ⌃⌘V", "keep image previews small"), Claude did the typing, testing and Googling.
-If you find a bug, it's a team effort. 🫡
-
 ## Česky
 
 Malý správce schránky, který žije v menu baru. Pamatuje si vše, co zkopíruješ, **jen v paměti**
 (nic na disk, žádná síť), a na **⌃⌘V** ukáže posledních 5 položek s typem obsahu a náhledem.
 Scrollováním se načítají další po 5. Výběr položky ji rovnou vloží do aktivní aplikace
 (potřebuje povolení v *Nastavení systému → Soukromí a zabezpečení → Zpřístupnění*).
-
-Celé je to **vibecoded** – nápad a připomínky ode mě, kód od Claude Code. Nestydím se za to. 😎
 
 Instalace: stáhni zip z [Releases](../../releases), přesuň appku do Aplikací a při prvním
 spuštění ji povol v *Soukromí a zabezpečení → Přesto otevřít* (appka není notarizovaná Applem).

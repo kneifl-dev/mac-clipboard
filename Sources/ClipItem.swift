@@ -1,5 +1,7 @@
 import AppKit
+import ImageIO
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Typ obsahu ve schránce.
 enum ClipKind {
@@ -113,17 +115,24 @@ final class ClipItem: Identifiable {
             let names = urls.map { $0.lastPathComponent }.joined(separator: ", ")
             let detail = urls.count == 1 ? urls[0].deletingLastPathComponent().path
                                          : "\(urls.count) \(urls.count < 5 ? "soubory" : "souborů")"
-            let icon = NSWorkspace.shared.icon(forFile: urls[0].path)
+            // Obrázkové soubory dostanou skutečný náhled, ostatní ikonu souboru.
+            let isImageFile = (try? urls[0].resourceValues(forKeys: [.contentTypeKey]))?
+                .contentType?.conforms(to: .image) == true
+            let thumb = isImageFile ? thumbnail(from: CGImageSourceCreateWithURL(urls[0] as CFURL, nil)) : nil
+            let icon = thumb ?? NSWorkspace.shared.icon(forFile: urls[0].path)
             return ClipItem(kind: .file, preview: names, detail: detail, thumbnail: icon,
                             sourceApp: sourceApp, representations: reps)
         }
 
         // Obrázek (bez textové podoby – jinak jde o např. buňky z tabulky)
-        if hasImage, string == nil, let image = NSImage(pasteboard: pb) {
-            let px = image.representations.first.map { "\($0.pixelsWide) × \($0.pixelsHigh) px" }
-                ?? "\(Int(image.size.width)) × \(Int(image.size.height))"
-            return ClipItem(kind: .image, preview: "Obrázek", detail: "\(px) · \(byteString(total))",
-                            thumbnail: image, sourceApp: sourceApp, representations: reps)
+        if hasImage, string == nil,
+           let data = pb.data(forType: .png) ?? pb.data(forType: .tiff),
+           let source = CGImageSourceCreateWithData(data as CFData, nil) {
+            let props = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
+            let w = props?[kCGImagePropertyPixelWidth] as? Int ?? 0
+            let h = props?[kCGImagePropertyPixelHeight] as? Int ?? 0
+            return ClipItem(kind: .image, preview: "Obrázek", detail: "\(w) × \(h) px · \(byteString(total))",
+                            thumbnail: thumbnail(from: source), sourceApp: sourceApp, representations: reps)
         }
 
         // Barva (např. z výběru barev)
@@ -185,6 +194,20 @@ final class ClipItem: Identifiable {
 
     private static func byteString(_ bytes: Int) -> String {
         ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .memory)
+    }
+
+    /// Malá miniatura (max. 96 px) – ImageIO ji vytvoří bez dekódování celého obrázku,
+    /// takže se v paměti pro zobrazení nedrží plná velikost.
+    private static func thumbnail(from source: CGImageSource?) -> NSImage? {
+        guard let source else { return nil }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceThumbnailMaxPixelSize: 96,
+        ]
+        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
+        return NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
     }
 
     private static func swatch(_ color: NSColor) -> NSImage {

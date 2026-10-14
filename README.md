@@ -1,7 +1,5 @@
 # Mac Clipboard
 
-*Vibecoded with [Claude Code](https://claude.com/claude-code).* 🤖
-
 A tiny, fully local clipboard history for macOS. It lives in the menu bar, remembers
 everything you copy (⌘C) and shows it on **⌃⌘V** (Control + Command + V).
 
@@ -71,3 +69,7 @@ spuštění ji povol v *Soukromí a zabezpečení → Přesto otevřít* (appka 
 ## License
 
 [MIT](LICENSE)
+
+---
+
+*Vibecoded with [Claude Code](https://claude.com/claude-code).* 🤖

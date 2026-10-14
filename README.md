@@ -41,7 +41,10 @@ Aby se vybraná položka rovnou **vložila** (simulace ⌘V), je potřeba povoli
 v *Nastavení systému → Soukromí a zabezpečení → Zpřístupnění*. Bez toho se položka
 jen zkopíruje do schránky a vložíš ji sám přes ⌘V.
 
-> Aplikace je podepsaná ad-hoc, takže po každém novém sestavení je potřeba oprávnění
-> povolit znovu (`build.sh` staré neplatné povolení sám smaže a appka se zeptá).
+### Podepisování
+`build.sh` podepisuje certifikátem **„MacClipboard Local Signing“** z přihlašovací
+klíčenky (vlastní certifikát jen pro tento Mac). Podpis je díky tomu stabilní
+a povolení ve Zpřístupnění přežije každé nové sestavení. Když certifikát chybí,
+podepíše se ad-hoc a povolení je po každém sestavení nutné dát znovu.
 
 Spouštění po přihlášení: *Nastavení systému → Obecné → Položky při přihlášení* → přidat MacClipboard.

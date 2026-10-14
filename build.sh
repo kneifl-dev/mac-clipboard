@@ -16,12 +16,20 @@ swiftc -O -swift-version 5 -parse-as-library \
   -o "$APP/Contents/MacOS/MacClipboard" \
   Sources/*.swift
 
-codesign --force --sign - --identifier cz.kneifl.macclipboard "$APP" >/dev/null
-echo "✅ Sestaveno: $APP"
-
-# Ad-hoc podpis se při každém sestavení změní, takže staré povolení ve „Zpřístupnění“
-# přestane platit (přepínač svítí, ale nefunguje). Smažeme ho, aby se appka zeptala znovu.
-tccutil reset Accessibility cz.kneifl.macclipboard >/dev/null 2>&1 || true
+# Podpis: pokud je v klíčence certifikát „MacClipboard Local Signing“, použije se –
+# podpis je pak stabilní a povolení ve „Zpřístupnění“ přežije další sestavení.
+# Jinak se podepíše ad-hoc (povolení po každém sestavení přestane platit).
+SIGN_ID="MacClipboard Local Signing"
+if security find-certificate -c "$SIGN_ID" >/dev/null 2>&1; then
+  codesign --force --sign "$SIGN_ID" --identifier cz.kneifl.macclipboard "$APP" 2>&1 | grep -v "replacing existing signature" || true
+  echo "✅ Sestaveno a podepsáno certifikátem „$SIGN_ID“: $APP"
+else
+  codesign --force --sign - --identifier cz.kneifl.macclipboard "$APP" 2>&1 | grep -v "replacing existing signature" || true
+  # Ad-hoc podpis se při každém sestavení změní a staré povolení přestane platit
+  # (přepínač svítí, ale nefunguje). Smažeme ho, aby se appka zeptala znovu.
+  tccutil reset Accessibility cz.kneifl.macclipboard >/dev/null 2>&1 || true
+  echo "✅ Sestaveno (ad-hoc podpis): $APP"
+fi
 
 case "${1:-}" in
   run)

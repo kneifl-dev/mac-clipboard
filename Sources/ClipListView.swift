@@ -1,11 +1,12 @@
 import SwiftUI
 
-/// Stav vyskakovacího okna (výběr, rozbalení).
+/// Stav vyskakovacího okna. Položky se zobrazují po stránkách:
+/// na začátku 5, při doscrollování na konec se přidá dalších 5.
 final class PanelModel: ObservableObject {
-    static let collapsedCount = 5
+    static let pageSize = 5
 
     @Published var selected = 0
-    @Published var expanded = false
+    @Published private(set) var loadedCount = pageSize
     let store: ClipboardStore
     var onPick: (ClipItem) -> Void = { _ in }
 
@@ -14,26 +15,34 @@ final class PanelModel: ObservableObject {
     }
 
     var visibleItems: [ClipItem] {
-        expanded ? store.items : Array(store.items.prefix(Self.collapsedCount))
+        Array(store.items.prefix(loadedCount))
+    }
+
+    var hasMore: Bool {
+        store.items.count > loadedCount
+    }
+
+    func loadMore() {
+        guard hasMore else { return }
+        loadedCount += Self.pageSize
+    }
+
+    /// Načte stránky tak, aby byla položka s daným indexem zobrazená.
+    private func ensureLoaded(_ index: Int) {
+        while index >= loadedCount, hasMore { loadMore() }
     }
 
     func reset() {
         selected = 0
-        expanded = false
+        loadedCount = Self.pageSize
         objectWillChange.send()
     }
 
     func move(_ delta: Int) {
-        let count = visibleItems.count
-        guard count > 0 else { return }
-        let next = selected + delta
-        // Šipkou dolů za 5. položku se seznam automaticky rozbalí.
-        if next >= count, !expanded, store.items.count > count {
-            expanded = true
-            selected = next
-            return
-        }
-        selected = min(max(next, 0), count - 1)
+        guard !store.items.isEmpty else { return }
+        let next = min(max(selected + delta, 0), store.items.count - 1)
+        ensureLoaded(next)
+        selected = next
     }
 
     func pickSelected() {
@@ -41,17 +50,21 @@ final class PanelModel: ObservableObject {
     }
 
     func pick(at index: Int) {
-        let items = visibleItems
-        guard items.indices.contains(index) else { return }
-        onPick(items[index])
+        guard store.items.indices.contains(index) else { return }
+        onPick(store.items[index])
     }
 
     func deleteSelected() {
-        let items = visibleItems
-        guard items.indices.contains(selected) else { return }
-        store.remove(items[selected])
+        guard store.items.indices.contains(selected) else { return }
+        store.remove(store.items[selected])
         selected = min(selected, max(visibleItems.count - 1, 0))
     }
+}
+
+/// Pozice značky na konci seznamu (pro načítání při scrollu).
+private struct BottomMarkerKey: PreferenceKey {
+    static var defaultValue: CGFloat = .infinity
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }
 
 struct ClipListView: View {
@@ -71,7 +84,6 @@ struct ClipListView: View {
             footer
         }
         .frame(width: 460)
-        .frame(maxHeight: .infinity, alignment: .top)
         .background(VisualEffectBackground())
         .ignoresSafeArea()
     }
@@ -118,44 +130,72 @@ struct ClipListView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity)
+        .frame(height: Self.listHeight)
     }
+
+    private static let rowSpacing: CGFloat = 2
+    private static let listPadding: CGFloat = 6
+    private static let hintHeight: CGFloat = 26
+    /// Výška seznamu = přesně 5 řádků + řádek s nápovědou; vše další je pod okrajem.
+    private static let listHeight: CGFloat =
+        CGFloat(PanelModel.pageSize) * ClipRow.height
+        + CGFloat(PanelModel.pageSize - 1) * rowSpacing
+        + listPadding + hintHeight
 
     private var list: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(spacing: 2) {
-                    let items = model.visibleItems
-                    ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                        ClipRow(item: item, index: index, isSelected: index == model.selected)
-                            .id(item.id)
-                            .onTapGesture { model.pick(at: index) }
-                            .onHover { if $0 { model.selected = index } }
-                    }
-                    if !model.expanded, store.items.count > PanelModel.collapsedCount {
-                        Button {
-                            model.expanded = true
-                        } label: {
-                            HStack(spacing: 4) {
-                                Image(systemName: "chevron.down")
-                                Text("Zobrazit více (\(store.items.count - PanelModel.collapsedCount))")
-                            }
-                            .font(.callout)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 6)
-                            .contentShape(Rectangle())
+                VStack(spacing: 0) {
+                    // Lazy: vykreslí se jen řádky, které jsou (skoro) vidět.
+                    LazyVStack(spacing: Self.rowSpacing) {
+                        ForEach(Array(model.visibleItems.enumerated()), id: \.element.id) { index, item in
+                            ClipRow(item: item, index: index, isSelected: index == model.selected)
+                                .id(item.id)
+                                .onTapGesture { model.pick(at: index) }
+                                .onHover { if $0 { model.selected = index } }
                         }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(Color.accentColor)
                     }
+                    .padding(.horizontal, Self.listPadding)
+                    .padding(.top, Self.listPadding)
+
+                    hint
+                        .frame(height: Self.hintHeight)
+
+                    // Neviditelná značka těsně pod okrajem okna – jakmile se
+                    // doscrolluje do zorného pole, načte se dalších 5 položek.
+                    GeometryReader { geo in
+                        Color.clear.preference(key: BottomMarkerKey.self,
+                                               value: geo.frame(in: .named("clipScroll")).minY)
+                    }
+                    .frame(height: 1)
                 }
-                .padding(6)
+            }
+            .coordinateSpace(name: "clipScroll")
+            .frame(height: Self.listHeight)
+            .onPreferenceChange(BottomMarkerKey.self) { markerY in
+                if markerY < Self.listHeight { model.loadMore() }
             }
             .onChange(of: model.selected) { index in
                 let items = model.visibleItems
                 guard items.indices.contains(index) else { return }
                 withAnimation(.easeOut(duration: 0.1)) { proxy.scrollTo(items[index].id) }
             }
+        }
+    }
+
+    @ViewBuilder private var hint: some View {
+        let remaining = store.items.count - model.loadedCount
+        if remaining > 0 {
+            Label("Scrolluj pro další (\(remaining))", systemImage: "chevron.down")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        } else if store.items.count > PanelModel.pageSize {
+            Text("Konec historie")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+        } else {
+            Color.clear
         }
     }
 

@@ -2,8 +2,9 @@
 
 Malý, plně lokální správce schránky pro macOS. Žije v menu baru, pamatuje si
 všechno, co zkopíruješ (⌘C), a na zkratku **⌃⌥V** (Control + Option + V) ukáže
-okno s posledními 5 položkami – včetně typu obsahu. Další položky zobrazíš
-tlačítkem *Zobrazit více* (nebo šipkou dolů) a scrolluješ v nich.
+okno s posledními 5 položkami – včetně typu obsahu. Když v okně scrolluješ dolů,
+postupně se načítají další položky po 5 (vykreslují se jen ty načtené, takže
+okno zůstává rychlé i s obrázky).
 
 ## Soukromí
 - **Nic se neukládá na disk** – historie je jen v paměti (RAM, max. 100 položek)
@@ -21,7 +22,7 @@ Při vložení se vrátí všechny původní formáty (např. formátování zů
 | Klávesa | Akce |
 |---|---|
 | ⌃⌥V | otevřít / zavřít |
-| ↑ ↓ (PgUp/PgDn) | výběr |
+| scroll / ↑ ↓ (PgUp/PgDn) | výběr, načtení dalších položek |
 | ↩ nebo klik | vložit do aktivní aplikace |
 | 1–9 | rychlé vložení položky |
 | ⌫ | odstranit položku z historie |

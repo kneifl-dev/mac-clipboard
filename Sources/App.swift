@@ -1,6 +1,5 @@
 import AppKit
 import Carbon
-import Combine
 import SwiftUI
 
 @main
@@ -51,11 +50,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
     private var hotKey: HotKey?
     private var keyMonitor: Any?
-    private var cancellables = Set<AnyCancellable>()
 
     private let hotKeyDescription = "⌃⌥V"
-    private let collapsedHeight: CGFloat = 368
-    private let expandedHeight: CGFloat = 600
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         store.start()
@@ -64,12 +60,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let host = NSHostingView(rootView: ClipListView(model: model, store: store))
         panel.contentView = host
         panel.onResignKey = { [weak self] in self?.hidePanel() }
-
-        // Když se seznam rozbalí, okno se zvětší (horní okraj zůstane na místě).
-        model.$expanded
-            .removeDuplicates()
-            .sink { [weak self] expanded in self?.resizePanel(expanded: expanded) }
-            .store(in: &cancellables)
 
         // Control + Option + V
         hotKey = HotKey(keyCode: UInt32(kVK_ANSI_V), modifiers: UInt32(controlKey | optionKey)) { [weak self] in
@@ -164,7 +154,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func showPanel() {
         model.reset()
-        let size = NSSize(width: 460, height: collapsedHeight)
+        let size = panel.contentView?.fittingSize ?? NSSize(width: 460, height: 380)
         panel.setFrame(NSRect(origin: originNearMouse(for: size), size: size), display: true)
         panel.makeKeyAndOrderFront(nil)
         installKeyMonitor()
@@ -174,19 +164,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         guard panel.isVisible else { return }
         panel.orderOut(nil)
         removeKeyMonitor()
-    }
-
-    private func resizePanel(expanded: Bool) {
-        guard panel.isVisible else { return }
-        var frame = panel.frame
-        let newHeight = expanded ? expandedHeight : collapsedHeight
-        let top = frame.maxY
-        frame.size.height = newHeight
-        frame.origin.y = top - newHeight
-        if let visible = panel.screen?.visibleFrame, frame.minY < visible.minY {
-            frame.origin.y = visible.minY
-        }
-        panel.setFrame(frame, display: true, animate: true)
     }
 
     /// Umístí okno pod kurzor myši a udrží ho celé na obrazovce.

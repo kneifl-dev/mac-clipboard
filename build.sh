@@ -62,9 +62,10 @@ case "$MODE" in
   release)
     VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" Resources/Info.plist)
     mkdir -p dist
-    ZIP="dist/MacClipboard-$VERSION.zip"
+    # Pevný název, aby fungoval odkaz releases/latest/download/MacClipboard.zip (install.sh).
+    ZIP="dist/MacClipboard.zip"
     rm -f "$ZIP"
     ditto -c -k --keepParent "$APP" "$ZIP"
-    echo "✅ Release: $ZIP ($(lipo -archs "$BIN"))"
+    echo "✅ Release $VERSION: $ZIP ($(lipo -archs "$BIN"))"
     ;;
 esac

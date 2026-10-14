@@ -15,18 +15,32 @@ everything you copy (⌘C) and shows it on **⌃⌘V** (Control + Command + V).
 
 ## Install
 
-1. Download `MacClipboard-x.y.zip` from [Releases](../../releases) and unzip it.
-2. Move `MacClipboard.app` to `/Applications`.
-3. The app is not notarized by Apple (that needs a paid developer account), so macOS will block
-   the first launch. Either run once in Terminal:
-   ```bash
-   xattr -dr com.apple.quarantine /Applications/MacClipboard.app
-   ```
-   or try to open it, then go to *System Settings → Privacy & Security* and click **Open Anyway**.
-4. For auto-paste, enable MacClipboard in *System Settings → Privacy & Security → Accessibility*,
-   then restart the app. Without it, the selected item is just copied and you paste with ⌘V.
+Paste this into Terminal:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/kneifl-dev/mac-clipboard/main/install.sh | bash
+```
+
+That's it – the app is installed to Applications and starts right away. On first launch it asks
+whether to start at login and offers to enable **auto-paste** (System Settings → Privacy & Security →
+Accessibility). Without it, the selected item is just copied and you paste with ⌘V.
+Run the same command again to update.
 
 Requires macOS 13 Ventura or newer (Apple Silicon and Intel).
+
+<details>
+<summary>Manual install / uninstall</summary>
+
+**Manual:** download `MacClipboard.zip` from [Releases](../../releases), unzip it and move
+`MacClipboard.app` to Applications. The app isn't notarized by Apple (that needs a paid developer
+account), so on first launch go to *System Settings → Privacy & Security* and click **Open Anyway**.
+
+**Uninstall:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/kneifl-dev/mac-clipboard/main/install.sh | bash -s -- --uninstall
+```
+</details>
 
 ## Usage
 
@@ -63,8 +77,11 @@ Malý správce schránky, který žije v menu baru. Pamatuje si vše, co zkopír
 Scrollováním se načítají další po 5. Výběr položky ji rovnou vloží do aktivní aplikace
 (potřebuje povolení v *Nastavení systému → Soukromí a zabezpečení → Zpřístupnění*).
 
-Instalace: stáhni zip z [Releases](../../releases), přesuň appku do Aplikací a při prvním
-spuštění ji povol v *Soukromí a zabezpečení → Přesto otevřít* (appka není notarizovaná Applem).
+Instalace – vlož do Terminálu (stejným příkazem appku i aktualizuješ):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/kneifl-dev/mac-clipboard/main/install.sh | bash
+```
 
 ## License
 

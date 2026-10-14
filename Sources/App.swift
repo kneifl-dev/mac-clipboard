@@ -1,10 +1,16 @@
 import AppKit
 import Carbon
+import ServiceManagement
 import SwiftUI
 
 @main
 enum MacClipboardMain {
     static func main() {
+        // Používá install.sh při odinstalaci: odebere položku z „Položek při přihlášení“.
+        if CommandLine.arguments.contains("--disable-login-item") {
+            try? SMAppService.mainApp.unregister()
+            return
+        }
         let app = NSApplication.shared
         let delegate = AppDelegate()
         app.delegate = delegate
@@ -74,11 +80,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.showPanel() }
         }
 
-        // Při prvním spuštění požádej o oprávnění k automatickému vkládání (⌘V).
-        if !AXIsProcessTrusted() {
-            let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
-            _ = AXIsProcessTrustedWithOptions(options)
-        }
+        showWelcomeIfNeeded()
     }
 
     // MARK: - Menu bar
@@ -119,6 +121,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         clear.isEnabled = !store.items.isEmpty
         menu.addItem(clear)
 
+        let login = NSMenuItem(title: "Spouštět po přihlášení", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
+        login.target = self
+        login.state = SMAppService.mainApp.status == .enabled ? .on : .off
+        menu.addItem(login)
+
         menu.addItem(.separator())
         if AXIsProcessTrusted() {
             let ax = NSMenuItem(title: "✓ Automatické vkládání je zapnuté", action: nil, keyEquivalent: "")
@@ -142,6 +149,55 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func togglePause() { store.isPaused.toggle() }
     @objc private func clearHistory() { store.clear() }
+
+    @objc private func toggleLaunchAtLogin() {
+        setLaunchAtLogin(SMAppService.mainApp.status != .enabled)
+    }
+
+    private func setLaunchAtLogin(_ enabled: Bool) {
+        do {
+            if enabled {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+        } catch {
+            NSLog("MacClipboard: nepodařilo se změnit spouštění po přihlášení: %@", error.localizedDescription)
+        }
+    }
+
+    // MARK: - Uvítání
+
+    /// Při úplně prvním spuštění vysvětlí, kde appka je, a nabídne povolení
+    /// automatického vkládání a spouštění po přihlášení.
+    /// (Jediné, co se ukládá na disk, je příznak, že uvítání už proběhlo – žádný obsah schránky.)
+    private func showWelcomeIfNeeded() {
+        let key = "didShowWelcome"
+        guard !UserDefaults.standard.bool(forKey: key) else { return }
+        UserDefaults.standard.set(true, forKey: key)
+
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.icon = NSImage(systemSymbolName: "doc.on.clipboard", accessibilityDescription: nil)
+        alert.messageText = "Mac Clipboard běží v menu baru"
+        alert.informativeText = """
+            Zkopíruj cokoliv pomocí ⌘C a historii otevřeš zkratkou \(hotKeyDescription).
+            Historie je jen v paměti – nic se neukládá na disk.
+
+            Aby se vybraná položka rovnou vložila, povol aplikaci v Nastavení systému             → Soukromí a zabezpečení → Zpřístupnění.
+            """
+        alert.addButton(withTitle: "Povolit vkládání…")
+        alert.addButton(withTitle: "Později")
+        let checkbox = NSButton(checkboxWithTitle: "Spouštět po přihlášení", target: nil, action: nil)
+        checkbox.state = .on
+        alert.accessoryView = checkbox
+
+        let response = alert.runModal()
+        setLaunchAtLogin(checkbox.state == .on)
+        if response == .alertFirstButtonReturn, !AXIsProcessTrusted() {
+            openAccessibilitySettings()
+        }
+    }
 
     @objc private func openAccessibilitySettings() {
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary

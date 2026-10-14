@@ -1,50 +1,71 @@
 # Mac Clipboard
 
-Malý, plně lokální správce schránky pro macOS. Žije v menu baru, pamatuje si
-všechno, co zkopíruješ (⌘C), a na zkratku **⌃⌘V** (Control + Command + V) ukáže
-okno s posledními 5 položkami – včetně typu obsahu. Když v okně scrolluješ dolů,
-postupně se načítají další položky po 5 (vykreslují se jen ty načtené, takže
-okno zůstává rychlé i s obrázky).
+A tiny, fully local clipboard history for macOS. It lives in the menu bar, remembers
+everything you copy (⌘C) and shows it on **⌃⌘V** (Control + Command + V).
 
-## Soukromí
-- **Nic se neukládá na disk** – historie je jen v paměti (RAM, max. 100 položek)
-  a po ukončení aplikace zmizí.
-- Žádná síť, žádná telemetrie.
-- Položky označené password managery jako citlivé (`org.nspasteboard.ConcealedType`
-  apod.) se neukládají vůbec.
-- V menu baru jde ukládání kdykoli pozastavit nebo historii vymazat.
+*Malý, plně lokální správce schránky pro macOS – [česky níže](#česky).*
 
-## Podporované typy
-Text · Odkaz · Formátovaný text (RTF/HTML) · Obrázek · Soubor(y) z Finderu · Barva · Jiné.
-Při vložení se vrátí všechny původní formáty (např. formátování zůstane zachované).
+- 🔒 **Memory only** – history is kept in RAM, never written to disk, gone when you quit.
+  No network, no telemetry.
+- 🙈 Items marked as sensitive by password managers (`org.nspasteboard.ConcealedType` etc.) are skipped.
+- 🗂 Shows the content type: text, link, rich text, image, file(s), color.
+- 🖼 Small thumbnails for images and image files.
+- ⚡ Shows the last 5 items; scroll down to load 5 more at a time.
+- ⌨️ Picking an item pastes it straight into the active app (needs Accessibility permission).
 
-## Ovládání okna
-| Klávesa | Akce |
+## Install
+
+1. Download `MacClipboard-x.y.zip` from [Releases](../../releases) and unzip it.
+2. Move `MacClipboard.app` to `/Applications`.
+3. The app is not notarized by Apple (that needs a paid developer account), so macOS will block
+   the first launch. Either run once in Terminal:
+   ```bash
+   xattr -dr com.apple.quarantine /Applications/MacClipboard.app
+   ```
+   or try to open it, then go to *System Settings → Privacy & Security* and click **Open Anyway**.
+4. For auto-paste, enable MacClipboard in *System Settings → Privacy & Security → Accessibility*,
+   then restart the app. Without it, the selected item is just copied and you paste with ⌘V.
+
+Requires macOS 13 Ventura or newer (Apple Silicon and Intel).
+
+## Usage
+
+| Key | Action |
 |---|---|
-| ⌃⌘V | otevřít / zavřít |
-| scroll / ↑ ↓ (PgUp/PgDn) | výběr, načtení dalších položek |
-| ↩ nebo klik | vložit do aktivní aplikace |
-| 1–9 | rychlé vložení položky |
-| ⌫ | odstranit položku z historie |
-| esc | zavřít |
+| ⌃⌘V | open / close |
+| scroll, ↑ ↓, PgUp/PgDn | select, load more |
+| ↩ or click | paste into the active app |
+| 1–9 | quick paste |
+| ⌫ | remove item from history |
+| esc | close |
 
-## Sestavení a spuštění
-Stačí Command Line Tools (Xcode není potřeba), macOS 13+.
+The menu bar icon lets you pause recording or clear the history.
+
+## Build from source
+
+Only Xcode Command Line Tools are needed (`xcode-select --install`).
 
 ```bash
-./build.sh run       # sestaví build/MacClipboard.app a spustí
-./build.sh install   # nainstaluje do /Applications a spustí
+./build.sh run       # build build/MacClipboard.app and launch it
+./build.sh install   # install to /Applications
+./build.sh release   # universal build zipped to dist/
 ```
 
-### Oprávnění
-Aby se vybraná položka rovnou **vložila** (simulace ⌘V), je potřeba povolit aplikaci
-v *Nastavení systému → Soukromí a zabezpečení → Zpřístupnění*. Bez toho se položka
-jen zkopíruje do schránky a vložíš ji sám přes ⌘V.
+Ad-hoc signed builds get a new signature every time, so macOS forgets the Accessibility
+permission after each rebuild. To avoid that, create a self-signed code signing certificate named
+**„MacClipboard Local Signing“** in your login keychain (Keychain Access → Certificate Assistant →
+Create a Certificate…, type *Code Signing*) – `build.sh` uses it automatically when present.
 
-### Podepisování
-`build.sh` podepisuje certifikátem **„MacClipboard Local Signing“** z přihlašovací
-klíčenky (vlastní certifikát jen pro tento Mac). Podpis je díky tomu stabilní
-a povolení ve Zpřístupnění přežije každé nové sestavení. Když certifikát chybí,
-podepíše se ad-hoc a povolení je po každém sestavení nutné dát znovu.
+## Česky
 
-Spouštění po přihlášení: *Nastavení systému → Obecné → Položky při přihlášení* → přidat MacClipboard.
+Malý správce schránky, který žije v menu baru. Pamatuje si vše, co zkopíruješ, **jen v paměti**
+(nic na disk, žádná síť), a na **⌃⌘V** ukáže posledních 5 položek s typem obsahu a náhledem.
+Scrollováním se načítají další po 5. Výběr položky ji rovnou vloží do aktivní aplikace
+(potřebuje povolení v *Nastavení systému → Soukromí a zabezpečení → Zpřístupnění*).
+
+Instalace: stáhni zip z [Releases](../../releases), přesuň appku do Aplikací a při prvním
+spuštění ji povol v *Soukromí a zabezpečení → Přesto otevřít* (appka není notarizovaná Applem).
+
+## License
+
+[MIT](LICENSE)

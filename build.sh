@@ -19,6 +19,10 @@ swiftc -O -swift-version 5 -parse-as-library \
 codesign --force --sign - --identifier cz.kneifl.macclipboard "$APP" >/dev/null
 echo "✅ Sestaveno: $APP"
 
+# Ad-hoc podpis se při každém sestavení změní, takže staré povolení ve „Zpřístupnění“
+# přestane platit (přepínač svítí, ale nefunguje). Smažeme ho, aby se appka zeptala znovu.
+tccutil reset Accessibility cz.kneifl.macclipboard >/dev/null 2>&1 || true
+
 case "${1:-}" in
   run)
     pkill -x MacClipboard 2>/dev/null || true

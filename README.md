@@ -1,7 +1,7 @@
 # Mac Clipboard
 
 Malý, plně lokální správce schránky pro macOS. Žije v menu baru, pamatuje si
-všechno, co zkopíruješ (⌘C), a na zkratku **⌃⌥V** (Control + Option + V) ukáže
+všechno, co zkopíruješ (⌘C), a na zkratku **⌃⌘V** (Control + Command + V) ukáže
 okno s posledními 5 položkami – včetně typu obsahu. Když v okně scrolluješ dolů,
 postupně se načítají další položky po 5 (vykreslují se jen ty načtené, takže
 okno zůstává rychlé i s obrázky).
@@ -21,7 +21,7 @@ Při vložení se vrátí všechny původní formáty (např. formátování zů
 ## Ovládání okna
 | Klávesa | Akce |
 |---|---|
-| ⌃⌥V | otevřít / zavřít |
+| ⌃⌘V | otevřít / zavřít |
 | scroll / ↑ ↓ (PgUp/PgDn) | výběr, načtení dalších položek |
 | ↩ nebo klik | vložit do aktivní aplikace |
 | 1–9 | rychlé vložení položky |
@@ -41,7 +41,7 @@ Aby se vybraná položka rovnou **vložila** (simulace ⌘V), je potřeba povoli
 v *Nastavení systému → Soukromí a zabezpečení → Zpřístupnění*. Bez toho se položka
 jen zkopíruje do schránky a vložíš ji sám přes ⌘V.
 
-> Aplikace je podepsaná ad-hoc, takže po každém novém sestavení může být nutné
-> oprávnění v Zpřístupnění odebrat a znovu přidat.
+> Aplikace je podepsaná ad-hoc, takže po každém novém sestavení je potřeba oprávnění
+> povolit znovu (`build.sh` staré neplatné povolení sám smaže a appka se zeptá).
 
 Spouštění po přihlášení: *Nastavení systému → Obecné → Položky při přihlášení* → přidat MacClipboard.

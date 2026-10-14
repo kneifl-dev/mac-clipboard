@@ -1,4 +1,5 @@
 import Carbon
+import Foundation
 
 /// Globální klávesová zkratka přes Carbon RegisterEventHotKey.
 /// Nevyžaduje oprávnění „Zpřístupnění“ ani „Sledování vstupu“.
@@ -23,6 +24,7 @@ final class HotKey {
         let id = EventHotKeyID(signature: OSType(0x4D43_4C50), id: 1) // "MCLP"
         let status = RegisterEventHotKey(keyCode, modifiers, id, GetApplicationEventTarget(), 0, &hotKeyRef)
         isRegistered = status == noErr
+        if !isRegistered { NSLog("MacClipboard: zkratku se nepodařilo zaregistrovat (chyba %d)", status) }
     }
 
     deinit {

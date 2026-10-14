@@ -51,7 +51,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var hotKey: HotKey?
     private var keyMonitor: Any?
 
-    private let hotKeyDescription = "⌃⌥V"
+    private let hotKeyDescription = "⌃⌘V"
+    private var didAskForAccessibility = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         store.start()
@@ -61,8 +62,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         panel.contentView = host
         panel.onResignKey = { [weak self] in self?.hidePanel() }
 
-        // Control + Option + V
-        hotKey = HotKey(keyCode: UInt32(kVK_ANSI_V), modifiers: UInt32(controlKey | optionKey)) { [weak self] in
+        // Control + Command + V
+        hotKey = HotKey(keyCode: UInt32(kVK_ANSI_V), modifiers: UInt32(controlKey | cmdKey)) { [weak self] in
             self?.togglePanel()
         }
 
@@ -118,9 +119,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         clear.isEnabled = !store.items.isEmpty
         menu.addItem(clear)
 
-        if !AXIsProcessTrusted() {
-            menu.addItem(.separator())
-            let ax = NSMenuItem(title: "Povolit automatické vkládání…", action: #selector(openAccessibilitySettings), keyEquivalent: "")
+        menu.addItem(.separator())
+        if AXIsProcessTrusted() {
+            let ax = NSMenuItem(title: "✓ Automatické vkládání je zapnuté", action: nil, keyEquivalent: "")
+            ax.isEnabled = false
+            menu.addItem(ax)
+        } else {
+            let ax = NSMenuItem(title: "⚠︎ Povolit automatické vkládání…", action: #selector(openAccessibilitySettings), keyEquivalent: "")
             ax.target = self
             menu.addItem(ax)
         }
@@ -216,7 +221,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             model.pickSelected()
         case kVK_Delete, kVK_ForwardDelete:
             model.deleteSelected()
-        case kVK_ANSI_V where event.modifierFlags.contains(.control) && event.modifierFlags.contains(.option):
+        case kVK_ANSI_V where event.modifierFlags.contains(.control) && event.modifierFlags.contains(.command):
             hidePanel() // opětovné stisknutí zkratky okno zavře
         default:
             if let index = Self.digitKeys[event.keyCode] {
@@ -233,7 +238,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func paste(_ item: ClipItem) {
         store.copyToPasteboard(item)
         hidePanel()
-        guard AXIsProcessTrusted() else { return } // bez oprávnění je položka aspoň ve schránce
+        guard AXIsProcessTrusted() else {
+            // Bez oprávnění je položka aspoň ve schránce – a jednou za spuštění se zeptáme na povolení.
+            if !didAskForAccessibility {
+                didAskForAccessibility = true
+                openAccessibilitySettings()
+            }
+            return
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
             Self.simulateCommandV()
         }
